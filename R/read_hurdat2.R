@@ -2,10 +2,8 @@
 #'
 #' @param filename HURDAT2 file path
 #'
-#' @return
+#' @return Hurricane observations dataframe
 #' @export
-#'
-#' @examples
 read_hurdat2 <- function(filename) {
   # Read and split raw data ----------------------------------
 
@@ -14,7 +12,7 @@ read_hurdat2 <- function(filename) {
   tracks_file <- filename
 
   hurr_tracks <- readLines(tracks_file)
-  hurr_tracks <- lapply(hurr_tracks, str_split, pattern = ",", simplify = TRUE)
+  hurr_tracks <- lapply(hurr_tracks, stringr::str_split, pattern = ",", simplify = TRUE)
 
   # Clean the raw data ---------------------------------------
 
@@ -25,13 +23,13 @@ read_hurdat2 <- function(filename) {
 
   # Create and clean meta data frame
   hurr_meta <- lapply(hurr_meta, tibble::as_tibble)
-  hurr_meta <- bind_rows(hurr_meta)
+  hurr_meta <- dplyr::bind_rows(hurr_meta)
 
   hurr_meta <- hurr_meta %>%
     dplyr::select(-V4) %>%
-    rename(storm_id = V1, storm_name = V2, n_obs = V3) %>%
-    mutate(
-      storm_name = str_trim(storm_name),
+    dplyr::rename(storm_id = V1, storm_name = V2, n_obs = V3) %>%
+    dplyr::mutate(
+      storm_name = stringr::str_trim(storm_name),
       n_obs = as.numeric(n_obs)
     )
 
@@ -39,7 +37,7 @@ read_hurdat2 <- function(filename) {
 
   # Create and clean obs data frame
   hurr_obs <- lapply(hurr_obs, tibble::as_tibble)
-  hurr_obs <- bind_rows(hurr_obs) %>%
+  hurr_obs <- dplyr::bind_rows(hurr_obs) %>%
     dplyr::mutate(storm_id = storm_id) %>%
     dplyr::select(storm_id, V1:V7) %>%
     dplyr::rename(date = V1, time = V2, record_id = V3, status = V4, lat = V5, long = V6, wind = V7)
@@ -47,7 +45,7 @@ read_hurdat2 <- function(filename) {
   # Change date and time & unite them
   hurr_obs <- hurr_obs %>%
     tidyr::unite(datetime, date, time) %>%
-    dplyr::mutate(datetime = ymd_hm(datetime))
+    dplyr::mutate(datetime = lubridate::ymd_hm(datetime))
   # mutate(decade = substring(year(datetime), 1, 3),
   # decade = paste0(decade, "0s"))
 
@@ -60,7 +58,7 @@ read_hurdat2 <- function(filename) {
   )
   hurr_obs <- hurr_obs %>%
     dplyr::mutate(
-      status = factor(str_trim(status),
+      status = factor(stringr::str_trim(status),
         levels = storm_levels,
         labels = storm_labels
       )
@@ -73,28 +71,28 @@ read_hurdat2 <- function(filename) {
 
   # Morph coordinates
   morph_long <- function(long) {
-    long <- ifelse(str_extract(long, "[A-Z]") == "W",
-      -as.numeric(str_extract(long, "[^A-Z]+")),
-      as.numeric(str_extract(long, "[^A-Z]+"))
+    long <- ifelse(stringr::str_extract(long, "[A-Z]") == "W",
+      -as.numeric(stringr::str_extract(long, "[^A-Z]+")),
+      as.numeric(stringr::str_extract(long, "[^A-Z]+"))
     )
     return(long)
   }
   morph_lat <- function(lat) {
-    lat <- ifelse(str_extract(lat, "[A-Z]") == "S",
-      -as.numeric(str_extract(lat, "[^A-Z]+")),
-      as.numeric(str_extract(lat, "[^A-Z]+"))
+    lat <- ifelse(stringr::str_extract(lat, "[A-Z]") == "S",
+      -as.numeric(stringr::str_extract(lat, "[^A-Z]+")),
+      as.numeric(stringr::str_extract(lat, "[^A-Z]+"))
     )
     return(lat)
   }
 
   # Split the numeric coordinates from their directions
   hurr_obs <- hurr_obs %>%
-    mutate(
-      lat_num = as.numeric(str_extract(lat, "[^A-Z]+")),
-      lat_dir = str_extract(lat, "[A-Z]"),
+    dplyr::mutate(
+      lat_num = as.numeric(stringr::str_extract(lat, "[^A-Z]+")),
+      lat_dir = stringr::str_extract(lat, "[A-Z]"),
       lat = morph_lat(lat),
-      lon_num = as.numeric(str_extract(long, "[^A-Z]+")),
-      lon_dir = str_extract(long, "[A-Z]"),
+      lon_num = as.numeric(stringr::str_extract(long, "[^A-Z]+")),
+      lon_dir = stringr::str_extract(long, "[A-Z]"),
       long = morph_long(long)
     )
 
@@ -102,27 +100,31 @@ read_hurdat2 <- function(filename) {
 
   # Ignore data outside the delta_t = 6 hours
   hurr_obs <- hurr_obs %>%
-    filter(hour(datetime) == 00 |
+    dplyr::filter(
+      hour(datetime) == 00 |
       hour(datetime) == 06 |
       hour(datetime) == 12 |
-      hour(datetime) == 18) %>%
-    filter(minute(datetime) == 00)
+      hour(datetime) == 18
+    ) %>%
+    dplyr::filter(
+      lubridate::minute(datetime) == 00
+    )
 
   # Clean up wind column -------------------------------------
 
   # Manually change odd middle values for AL191976 & AL111973
   hurr_obs <- hurr_obs %>%
-    mutate(
+    dplyr::mutate(
       wind = ifelse(storm_id == "AL191976" & wind == " -99", 20, wind),
       wind = ifelse(storm_id == "AL111973" & wind == " -99", 30, wind),
-      wind = ifelse(storm_id == "AL111973" & month(datetime) == 9 &
+      wind = ifelse(storm_id == "AL111973" & lubridate::month(datetime) == 9 &
         day(datetime) == 12 & hour(datetime) == 12, NA, wind)
     ) %>%
-    filter(is.na(wind) != TRUE)
+    dplyr::filter(is.na(wind) != TRUE)
 
   # Clean and reformat the wind column
   hurr_obs <- hurr_obs %>%
-    mutate(wind = ifelse(wind == " -99", NA, as.numeric(wind)))
+    dplyr::mutate(wind = ifelse(wind == " -99", NA, as.numeric(wind)))
 
   # Add useful info to data frame ----------------------------
 
@@ -134,13 +136,13 @@ read_hurdat2 <- function(filename) {
 
   # Add storm_name and storm_year to hurr_obs
   hurr_obs <- hurr_obs %>%
-    left_join(hurr_meta, by = "storm_id") %>%
-    mutate(storm_year = year(datetime))
+    dplyr::left_join(hurr_meta, by = "storm_id") %>%
+    dplyr::mutate(storm_year = year(datetime))
 
   # Recalculate n_obs
   hurr_obs <- hurr_obs %>%
-    group_by(storm_id) %>%
-    mutate(n_obs = length(wind))
+    dplyr::group_by(storm_id) %>%
+    dplyr::mutate(n_obs = length(wind))
 
   # Rearrange hurr_obs data frame columns
   hurr_obs <- hurr_obs[c(
