@@ -1,15 +1,25 @@
 Package: tropicalcyclones
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Parse and Explore Data from Tropical-cyclone Databases
+Version: 1.0.0
 Authors@R: 
     person(given = "Alfredo",
            family = "Hernández",
            role = c("aut", "cre"),
            email = "aldomann.designs@gmail.com",
            comment = c(ORCID = "0000-0002-2660-4545"))
-Description: What the package does (one paragraph).
+Description: Parse and explore data from several
+    tropical-cyclone related databases, such as HURDAT2, HadISST1, and
+    OISST.
 License: GPL-3
-Encoding: UTF-8
-LazyData: true
 URL: https://github.com/aldomann/tropicalcyclones
 BugReports: https://github.com/aldomann/tropicalcyclones/issues
+Imports: 
+    dplyr,
+    lubridate,
+    magrittr,
+    stringr,
+    tibble,
+    tidyr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.0.2

@@ -1,17 +1,16 @@
 #' Title
 #'
-#' @param filename HURDAT2 file path
+#' @param con a connection object or a character string. This is the file path or URL for the HURDAT2 dataset to read.
 #'
 #' @return Hurricane observations dataframe
 #' @export
-read_hurdat2 <- function(filename) {
+read_hurdat2 <- function(con) {
   # Read and split raw data ----------------------------------
 
   # tracks_url <- paste0("http://www.aoml.noaa.gov/hrd/hurdat/", "hurdat2-nepac-1949-2016-apr2017.txt")
   # tracks_url <- paste0("http://www.aoml.noaa.gov/hrd/hurdat/", "hurdat2-1851-2016-apr2017.txt")
-  tracks_file <- filename
 
-  hurr_tracks <- readLines(tracks_file)
+  hurr_tracks <- readLines(con)
   hurr_tracks <- lapply(hurr_tracks, stringr::str_split, pattern = ",", simplify = TRUE)
 
   # Clean the raw data ---------------------------------------
@@ -143,11 +142,12 @@ read_hurdat2 <- function(filename) {
     dplyr::mutate(n_obs = length(wind))
 
   # Rearrange hurr_obs data frame columns
-  hurr_obs <- hurr_obs[c(
+  hurr_obs <- hurr_obs %>%
+    dplyr::select(
     "storm_id", "storm_name", "n_obs", "datetime",
     "status", "record_id", "lat", "long",
     "wind", "storm_year"
-  )]
+  )
   # Unused variables
   # 	"delta_t" after "datetime"
   # 	"cat_5" after "wind"
