@@ -46,8 +46,6 @@ read_hurdat2 <- function(filename) {
   hurr_obs <- hurr_obs %>%
     tidyr::unite(datetime, date, time) %>%
     dplyr::mutate(datetime = lubridate::ymd_hm(datetime))
-  # mutate(decade = substring(year(datetime), 1, 3),
-  # decade = paste0(decade, "0s"))
 
   # Meaningful status names
   storm_levels <- c("TD", "TS", "HU", "EX", "SD", "SS", "LO", "WV", "DB")
@@ -91,8 +89,8 @@ read_hurdat2 <- function(filename) {
       lat_num = as.numeric(stringr::str_extract(lat, "[^A-Z]+")),
       lat_dir = stringr::str_extract(lat, "[A-Z]"),
       lat = morph_lat(lat),
-      lon_num = as.numeric(stringr::str_extract(long, "[^A-Z]+")),
-      lon_dir = stringr::str_extract(long, "[A-Z]"),
+      long_num = as.numeric(stringr::str_extract(long, "[^A-Z]+")),
+      long_dir = stringr::str_extract(long, "[A-Z]"),
       long = morph_long(long)
     )
 
@@ -101,10 +99,10 @@ read_hurdat2 <- function(filename) {
   # Ignore data outside the delta_t = 6 hours
   hurr_obs <- hurr_obs %>%
     dplyr::filter(
-      hour(datetime) == 00 |
-      hour(datetime) == 06 |
-      hour(datetime) == 12 |
-      hour(datetime) == 18
+      lubridate::hour(datetime) == 00 |
+      lubridate::hour(datetime) == 06 |
+      lubridate::hour(datetime) == 12 |
+      lubridate::hour(datetime) == 18
     ) %>%
     dplyr::filter(
       lubridate::minute(datetime) == 00
@@ -118,7 +116,7 @@ read_hurdat2 <- function(filename) {
       wind = ifelse(storm_id == "AL191976" & wind == " -99", 20, wind),
       wind = ifelse(storm_id == "AL111973" & wind == " -99", 30, wind),
       wind = ifelse(storm_id == "AL111973" & lubridate::month(datetime) == 9 &
-        day(datetime) == 12 & hour(datetime) == 12, NA, wind)
+        lubridate::day(datetime) == 12 & lubridate::hour(datetime) == 12, NA, wind)
     ) %>%
     dplyr::filter(is.na(wind) != TRUE)
 
@@ -137,7 +135,7 @@ read_hurdat2 <- function(filename) {
   # Add storm_name and storm_year to hurr_obs
   hurr_obs <- hurr_obs %>%
     dplyr::left_join(hurr_meta, by = "storm_id") %>%
-    dplyr::mutate(storm_year = year(datetime))
+    dplyr::mutate(storm_year = lubridate::year(datetime))
 
   # Recalculate n_obs
   hurr_obs <- hurr_obs %>%
@@ -153,7 +151,6 @@ read_hurdat2 <- function(filename) {
   # Unused variables
   # 	"delta_t" after "datetime"
   # 	"cat_5" after "wind"
-  #   "decade" after storm_year
 
   return(hurr_obs)
 }
