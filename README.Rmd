@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 
 ## Overview
 
+Parse and explore data from several tropical-cyclone related databases, such as HURDAT2, HadISST1, and OISST.
+
 
 ## Installation
 
