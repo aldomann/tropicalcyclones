@@ -1,12 +1,13 @@
 #' Title
 #'
 #' @param con a connection object or a character string. This is the file path or URL for the HURDAT2 dataset to read.
+#' @param interp_wind whether missing wind speeds should be linearly interpolated.
 #'
 #' @return Hurricane observations dataframe
 #' @export
 #'
 #' @importFrom rlang .data
-read_hurdat2 <- function(con) {
+read_hurdat2 <- function(con, interp_wind = FALSE) {
   # Read and split raw data ----------------------------------
 
   hurr_tracks <- readLines(con)
@@ -140,6 +141,21 @@ read_hurdat2 <- function(con) {
   #   ) %>%
   #   dplyr::group_by(.data$storm_id) %>%
   #   dplyr::mutate(n_obs = dplyr::n())
+
+  # Interpolate missing wind speeds --------------------------
+
+  if (interp_wind) {
+    hurr_obs <- hurr_obs %>%
+      dplyr::group_by(.data$storm_id) %>%
+      dplyr::mutate(
+        max_wind = ifelse(
+          .data$n_obs - sum(is.na(.data$max_wind)) >= 2,
+          stats::approx(.data$datetime, .data$max_wind, .data$datetime)$y,
+          .data$max_wind
+        )
+      ) %>%
+      dplyr::ungroup()
+  }
 
   # Add useful info to data frame ----------------------------
 
