@@ -4,11 +4,10 @@
 #'
 #' @return Hurricane observations dataframe
 #' @export
+#'
+#' @importFrom rlang .data
 read_hurdat2 <- function(con) {
   # Read and split raw data ----------------------------------
-
-  # tracks_url <- paste0("http://www.aoml.noaa.gov/hrd/hurdat/", "hurdat2-nepac-1949-2016-apr2017.txt")
-  # tracks_url <- paste0("http://www.aoml.noaa.gov/hrd/hurdat/", "hurdat2-1851-2016-apr2017.txt")
 
   hurr_tracks <- readLines(con)
   hurr_tracks <- lapply(hurr_tracks, stringr::str_split, pattern = ",", simplify = TRUE)
@@ -25,11 +24,10 @@ read_hurdat2 <- function(con) {
   hurr_meta <- dplyr::bind_rows(hurr_meta)
 
   hurr_meta <- hurr_meta %>%
-    dplyr::select(-V4) %>%
-    dplyr::rename(storm_id = V1, storm_name = V2, n_obs = V3) %>%
+    dplyr::select(-.data$V4) %>%
+    dplyr::rename(storm_id = .data$V1, storm_name = .data$V2, n_obs = .data$V3) %>%
     dplyr::mutate(
-      storm_name = stringr::str_trim(storm_name),
-      n_obs = as.numeric(n_obs)
+      n_obs = as.numeric(.data$n_obs)
     )
 
   storm_ids <- rep(hurr_meta$storm_id, times = hurr_meta$n_obs)
@@ -38,43 +36,61 @@ read_hurdat2 <- function(con) {
   hurr_obs <- lapply(hurr_obs_raw, tibble::as_tibble) %>%
     dplyr::bind_rows() %>%
     dplyr::mutate(storm_id = storm_ids) %>%
-    dplyr::select(storm_id, V1:V20) %>%
+    dplyr::select(.data$storm_id, dplyr::everything(), -.data$V21) %>%
     dplyr::rename(
-      date = V1, time = V2, record_id = V3, status = V4, lat = V5, long = V6, max_wind = V7, min_pressure = V8,
-      wind_34kt_radii_ne = V9, wind_34kt_radii_se = V10, wind_34kt_radii_sw = V11, wind_34kt_radii_nw = V12,
-      wind_50kt_radii_ne = V13, wind_50kt_radii_se = V14, wind_50kt_radii_sw = V15, wind_50kt_radii_nw = V16,
-      wind_64kt_radii_ne = V17, wind_64kt_radii_se = V18, wind_64kt_radii_sw = V19, wind_64kt_radii_nw = V20
+      date = .data$V1, time = .data$V2, record_id = .data$V3, status = .data$V4,
+      lat = .data$V5, long = .data$V6, max_wind = .data$V7, min_pressure = .data$V8,
+      wind_34kt_radii_ne = .data$V9, wind_34kt_radii_se = .data$V10,
+      wind_34kt_radii_sw = .data$V11, wind_34kt_radii_nw = .data$V12,
+      wind_50kt_radii_ne = .data$V13, wind_50kt_radii_se = .data$V14,
+      wind_50kt_radii_sw = .data$V15, wind_50kt_radii_nw = .data$V16,
+      wind_64kt_radii_ne = .data$V17, wind_64kt_radii_se = .data$V18,
+      wind_64kt_radii_sw = .data$V19, wind_64kt_radii_nw = .data$V20
+    ) %>%
+    # Add storm_name
+    dplyr::left_join(
+      hurr_meta,
+      by = "storm_id"
     )
 
-  # Trim whitespaces some cleanup
+  # Clean variables ------------------------------------------
+
+  # Trim whitespaces and some cleanup
   hurr_obs <- hurr_obs %>%
     dplyr::mutate_all(stringr::str_trim) %>%
     # Replace record_id NAs
-    dplyr::mutate(record_id = replace(record_id, record_id == "", NA)) %>%
+    dplyr::mutate(record_id = replace(.data$record_id, .data$record_id == "", NA)) %>%
     # Clean numeric values and replace NAs
-    dplyr::mutate(max_wind = ifelse(max_wind == "-99", NA, as.numeric(max_wind))) %>%
     dplyr::mutate_at(
       .vars = dplyr::vars(
-        min_pressure,
-        wind_34kt_radii_ne, wind_34kt_radii_se, wind_34kt_radii_sw, wind_34kt_radii_nw,
-        wind_50kt_radii_ne, wind_50kt_radii_se, wind_50kt_radii_sw, wind_50kt_radii_nw,
-        wind_64kt_radii_ne, wind_64kt_radii_se, wind_64kt_radii_sw, wind_64kt_radii_nw
+        .data$max_wind, .data$min_pressure,
+        .data$wind_34kt_radii_ne, .data$wind_34kt_radii_se,
+        .data$wind_34kt_radii_sw, .data$wind_34kt_radii_nw,
+        .data$wind_50kt_radii_ne, .data$wind_50kt_radii_se,
+        .data$wind_50kt_radii_sw, .data$wind_50kt_radii_nw,
+        .data$wind_64kt_radii_ne, .data$wind_64kt_radii_se,
+        .data$wind_64kt_radii_sw, .data$wind_64kt_radii_nw
       ),
       .funs = function(x) {
-        ifelse(x == "-999", NA, as.numeric(x))
+        ifelse(x %in% c("-99", "-999"), NA, as.numeric(x))
       }
     )
 
-
   # Change date and time & unite them
   hurr_obs <- hurr_obs %>%
-    tidyr::unite(datetime, date, time) %>%
-    dplyr::mutate(datetime = lubridate::ymd_hm(datetime))
+    tidyr::unite(
+      col = "datetime",
+      .data$date, .data$time
+    ) %>%
+    dplyr::mutate(
+      datetime = lubridate::ymd_hm(.data$datetime),
+      storm_year = lubridate::year(.data$datetime)
+    )
 
   # Meaningful status names
   hurr_obs <- hurr_obs %>%
     dplyr::mutate(
-      status = factor(status,
+      status = factor(.data$status,
         levels = c("TD", "TS", "HU", "EX", "SD", "SS", "LO", "WV", "DB"),
         labels = c(
           "Tropical depression", "Tropical storm", "Hurricane",
@@ -106,63 +122,50 @@ read_hurdat2 <- function(con) {
   # Split the numeric coordinates from their directions
   hurr_obs <- hurr_obs %>%
     dplyr::mutate(
-      lat_num = as.numeric(stringr::str_extract(lat, "[^A-Z]+")),
-      lat_hem = stringr::str_extract(lat, "[A-Z]"),
-      lat = morph_lat(lat),
-      long_num = as.numeric(stringr::str_extract(long, "[^A-Z]+")),
-      long_hem = stringr::str_extract(long, "[A-Z]"),
-      long = morph_long(long)
+      lat_num = as.numeric(stringr::str_extract(.data$lat, "[^A-Z]+")),
+      lat_hem = stringr::str_extract(.data$lat, "[A-Z]"),
+      lat = morph_lat(.data$lat),
+      long_num = as.numeric(stringr::str_extract(.data$long, "[^A-Z]+")),
+      long_hem = stringr::str_extract(.data$long, "[A-Z]"),
+      long = morph_long(.data$long)
     )
 
   # Clean non-standard data ----------------------------------
 
   # Ignore data outside the delta_t = 6 hours
-  hurr_obs <- hurr_obs %>%
-    dplyr::filter(
-      lubridate::hour(datetime) %in% c(0, 6, 12, 18),
-      lubridate::minute(datetime) == 0
-    )
-
-  # Clean up wind column -------------------------------------
-
-  # Manually change odd middle values for AL191976 & AL111973
-  hurr_obs <- hurr_obs %>%
-    dplyr::mutate(
-      max_wind = ifelse(storm_id == "AL191976" & is.na(max_wind), 20, max_wind),
-      max_wind = ifelse(storm_id == "AL111973" & is.na(max_wind), 30, max_wind),
-      max_wind = ifelse(storm_id == "AL111973" & lubridate::month(datetime) == 9 &
-        lubridate::day(datetime) == 12 & lubridate::hour(datetime) == 12, NA, max_wind)
-    ) %>%
-    dplyr::filter(!is.na(max_wind))
+  # hurr_obs <- hurr_obs %>%
+  #   dplyr::filter(
+  #     lubridate::hour(.data$datetime) %in% c(0, 6, 12, 18),
+  #     lubridate::minute(.data$datetime) == 0
+  #   ) %>%
+  #   dplyr::group_by(.data$storm_id) %>%
+  #   dplyr::mutate(n_obs = dplyr::n())
 
   # Add useful info to data frame ----------------------------
 
   # Add category 5 hurricanes boolean
-  hurr_obs <- hurr_obs %>%
-    dplyr::group_by(storm_id) %>%
-    dplyr::mutate(cat_5 = max(max_wind) >= 137) %>%
-    dplyr::ungroup()
-
-  # Add storm_name and storm_year to hurr_obs
-  hurr_obs <- hurr_obs %>%
-    dplyr::left_join(
-      hurr_meta,
-      by = "storm_id"
-    ) %>%
-    dplyr::mutate(storm_year = lubridate::year(datetime))
-
-  # Recalculate n_obs
-  hurr_obs <- hurr_obs %>%
-    dplyr::group_by(storm_id) %>%
-    dplyr::mutate(n_obs = dplyr::n())
+  # hurr_obs <- hurr_obs %>%
+  #   dplyr::group_by(.data$storm_id) %>%
+  #   dplyr::mutate(
+  #     cat_5 = ifelse(
+  #       .data$n_obs - sum(is.na(.data$max_wind)) > 0,
+  #       max(.data$max_wind, na.rm = TRUE) >= 137,
+  #       NA
+  #     )
+  #   ) %>%
+  #   dplyr::ungroup()
 
   # Rearrange hurr_obs data frame columns
   hurr_obs <- hurr_obs %>%
     dplyr::select(
-      storm_id, storm_name, n_obs, storm_year, datetime,
-      status, record_id,
-      lat, lat_num, lat_hem, long, long_num, long_hem,
-      max_wind, cat_5, dplyr::everything()
+      .data$storm_id, .data$storm_name, .data$n_obs,
+      .data$storm_year, .data$datetime,
+      .data$status, .data$record_id,
+      .data$lat, .data$lat_num, .data$lat_hem,
+      .data$long, .data$long_num, .data$long_hem,
+      .data$max_wind,
+      # cat_5,
+      dplyr::everything()
     )
 
   return(hurr_obs)
