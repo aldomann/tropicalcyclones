@@ -26,10 +26,7 @@ read_hurdat2 <- function(con, interp_wind = FALSE) {
 
   hurr_meta <- hurr_meta %>%
     dplyr::select(-.data$V4) %>%
-    dplyr::rename(storm_id = .data$V1, storm_name = .data$V2, n_obs = .data$V3) %>%
-    dplyr::mutate(
-      n_obs = as.numeric(.data$n_obs)
-    )
+    dplyr::rename(storm_id = .data$V1, storm_name = .data$V2, n_obs = .data$V3)
 
   storm_ids <- rep(hurr_meta$storm_id, times = hurr_meta$n_obs)
 
@@ -75,6 +72,10 @@ read_hurdat2 <- function(con, interp_wind = FALSE) {
       .funs = function(x) {
         ifelse(x %in% c("-99", "-999"), NA, as.numeric(x))
       }
+    ) %>%
+    dplyr::mutate(
+      n_obs = as.numeric(.data$n_obs),
+      record_id = as.factor(.data$record_id)
     )
 
   # Change date and time & unite them
@@ -160,16 +161,16 @@ read_hurdat2 <- function(con, interp_wind = FALSE) {
   # Add useful info to data frame ----------------------------
 
   # Add category 5 hurricanes boolean
-  # hurr_obs <- hurr_obs %>%
-  #   dplyr::group_by(.data$storm_id) %>%
-  #   dplyr::mutate(
-  #     cat_5 = ifelse(
-  #       .data$n_obs - sum(is.na(.data$max_wind)) > 0,
-  #       max(.data$max_wind, na.rm = TRUE) >= 137,
-  #       NA
-  #     )
-  #   ) %>%
-  #   dplyr::ungroup()
+  hurr_obs <- hurr_obs %>%
+    dplyr::group_by(.data$storm_id) %>%
+    dplyr::mutate(
+      cat_5 = ifelse(
+        .data$n_obs - sum(is.na(.data$max_wind)) > 0,
+        max(.data$max_wind, na.rm = TRUE) >= 137,
+        NA
+      )
+    ) %>%
+    dplyr::ungroup()
 
   # Rearrange hurr_obs data frame columns
   hurr_obs <- hurr_obs %>%
@@ -179,8 +180,7 @@ read_hurdat2 <- function(con, interp_wind = FALSE) {
       .data$status, .data$record_id,
       .data$lat, .data$lat_num, .data$lat_hem,
       .data$long, .data$long_num, .data$long_hem,
-      .data$max_wind,
-      # cat_5,
+      .data$max_wind, .data$cat_5,
       dplyr::everything()
     )
 
