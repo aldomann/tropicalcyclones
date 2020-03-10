@@ -4,10 +4,12 @@
 \alias{read_hurdat2}
 \title{Title}
 \usage{
-read_hurdat2(con)
+read_hurdat2(con, interp_wind = FALSE)
 }
 \arguments{
 \item{con}{a connection object or a character string. This is the file path or URL for the HURDAT2 dataset to read.}
+
+\item{interp_wind}{whether missing wind speeds should be linearly interpolated.}
 }
 \value{
 Hurricane observations dataframe
