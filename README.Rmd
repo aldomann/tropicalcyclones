@@ -35,3 +35,18 @@ The development version can be installed from [GitHub](https://github.com/) with
 devtools::install_github("aldomann/tropicalcyclones")
 ```
 ## Examples
+
+Since `read_hurdat2()` is powered by `readLines`, we can use any connection, such as
+
+- Local files.
+- Compressed files.
+- Remote URLs.
+
+```r
+hurr_obs_natl <- tropicalcyclones::read_hurdat2("hurdat2-1851-2016-apr2017.txt")
+```
+
+```r
+hurr_obs_natl <- tropicalcyclones::read_hurdat2("https://www.aoml.noaa.gov/hrd/hurdat/hurdat2.html")
+```
+
