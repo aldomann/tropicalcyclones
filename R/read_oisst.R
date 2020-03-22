@@ -1,6 +1,6 @@
-#' Extract Daily SST from OISST
+#' Read OISST dataset
 #'
-#' Extract mean sea surface temperature data from NOAA's Optimum Interpolated Sea Surface Temperature (OISST) v2 High Resolution daily or weekly datasets.
+#' Read and extract mean sea surface temperature data from NOAA's Optimum Interpolated Sea Surface Temperature (OISST) v2 High Resolution daily or weekly datasets.
 #'
 #' @param filename full path to unzipped netCDF data file
 #' @param landsea_mask full path to land-sea mask netCDF file
@@ -11,7 +11,7 @@
 #'
 #' @return A 2-dimensional matrix with latitudes in rows and longitudes in columns
 #' @export
-extract_daily_oisst <- function(filename, landsea_mask, long_w, long_e, lat_s, lat_n) {
+read_oisst <- function(filename, landsea_mask, long_w, long_e, lat_s, lat_n) {
   # Parse latitudes and longitudes ---------------------------
 
   # Generate set of grid cell-center latitudes (from S to N)
