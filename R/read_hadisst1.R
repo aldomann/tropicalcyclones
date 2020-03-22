@@ -1,4 +1,4 @@
-#' Title
+#' Read HadISST1 dataset
 #'
 #' @param filename Path of netCDF file
 #' @param ... Arguments passed to raster::brick()

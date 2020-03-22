@@ -1,4 +1,4 @@
-#' Title
+#' Read HURDAT2 dataset
 #'
 #' @param con a connection object or a character string. This is the file path or URL for the HURDAT2 dataset to read.
 #' @param interp_wind whether missing wind speeds should be linearly interpolated.
