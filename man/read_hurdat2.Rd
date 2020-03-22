@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_hurdat2.R
 \name{read_hurdat2}
 \alias{read_hurdat2}
-\title{Title}
+\title{Read HURDAT2 dataset}
 \usage{
 read_hurdat2(con, interp_wind = FALSE)
 }
@@ -15,5 +15,5 @@ read_hurdat2(con, interp_wind = FALSE)
 Hurricane observations dataframe
 }
 \description{
-Title
+Read HURDAT2 dataset
 }

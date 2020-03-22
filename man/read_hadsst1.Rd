@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_hadisst1.R
 \name{read_hadsst1}
 \alias{read_hadsst1}
-\title{Title}
+\title{Read HadISST1 dataset}
 \usage{
 read_hadsst1(filename, ...)
 }
@@ -15,5 +15,5 @@ read_hadsst1(filename, ...)
 RasterBrick object
 }
 \description{
-Title
+Read HadISST1 dataset
 }
