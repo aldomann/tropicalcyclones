@@ -1,8 +1,12 @@
 
-# tropicalcyclones <!-- <img src="figures/logo.png" align="right" width="120" /> -->
+# tropicalcyclones <img src="man/figures/logo.png" align="right" width="120"/>
 
 <!-- badges: start -->
 
+[![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/tropicalcyclones)](https://cran.r-project.org/package=tropicalcyclones)
+[![pkgdown Workflow
+Status](https://github.com/aldomann/tropicalcyclones/workflows/pkgdown/badge.svg)](https://aldomann.github.io/maroikart/)
 <!-- badges: end -->
 
 ## Overview
